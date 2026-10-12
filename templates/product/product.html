@@ -1,0 +1,156 @@
+{% extends "base/base.html" %}
+
+{% block start %}
+<section class="section-content padding-y bg">
+	<div class="container">
+		<div class="card">
+			<div class="row no-gutters">
+				<aside class="col-md-6 p-3 p-md-4">
+					{% with images=product.product_images.all %}
+						{% if images %}
+							<div class="product-gallery">
+								<div class="product-gallery-main">
+									<button type="button" class="gallery-image-button" id="open-image-viewer" aria-label="View larger product image">
+										<img id="main-product-image" src="{{ images.0.image.url }}" alt="{{ product.product_name }}">
+									</button>
+									{% if images|length > 1 %}
+										<button type="button" class="gallery-nav gallery-previous" id="gallery-previous" aria-label="Previous image">&#10094;</button>
+										<button type="button" class="gallery-nav gallery-next" id="gallery-next" aria-label="Next image">&#10095;</button>
+									{% endif %}
+								</div>
+								{% if images|length > 1 %}
+									<div class="product-gallery-thumbnails" aria-label="Product images">
+										{% for image in images %}
+											<button type="button" class="product-thumbnail{% if forloop.first %} is-active{% endif %}" data-image-url="{{ image.image.url }}" data-image-alt="{{ product.product_name }} - image {{ forloop.counter }}" aria-label="Show image {{ forloop.counter }}" aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}">
+												<img src="{{ image.image.url }}" alt="" loading="lazy">
+											</button>
+										{% endfor %}
+									</div>
+								{% endif %}
+							</div>
+							<dialog id="image-viewer" class="image-viewer" aria-label="Product image viewer">
+								<button type="button" class="image-viewer-close" id="close-image-viewer" aria-label="Close image viewer">&times;</button>
+								<img id="expanded-product-image" src="{{ images.0.image.url }}" alt="{{ product.product_name }}">
+							</dialog>
+						{% else %}
+							<div class="product-image-placeholder product-image-placeholder-large" role="img" aria-label="No image available">
+								<i class="fas fa-image" aria-hidden="true"></i>
+								<span>Product image coming soon</span>
+							</div>
+						{% endif %}
+					{% endwith %}
+				</aside>
+				<main class="col-md-6 border-left">
+					<article class="content-body p-3 p-md-4">
+						<p class="text-muted mb-2">{{ product.category.category_name }}</p>
+						<h1 class="h2 title">{{ product.product_name }}</h1>
+						<div class="mb-3">
+							<var class="price h4" id="product-price" data-base-price="{{ product.price }}">${{ updated_price|default:product.price }}</var>
+						</div>
+						<p>{{ product.product_description }}</p>
+						<hr>
+						<form method="post" action="{% url 'add_to_cart' product.slug %}">
+							{% csrf_token %}
+							<div class="form-row align-items-end">
+								<div class="form-group col-auto">
+									<label for="product-quantity">Quantity</label>
+									<div class="input-group quantity-control">
+										<button class="btn btn-light" type="button" data-quantity-step="-1" aria-label="Decrease quantity">−</button>
+										<input id="product-quantity" type="number" class="form-control text-center" name="quantity" value="1" min="1" required>
+										<button class="btn btn-light" type="button" data-quantity-step="1" aria-label="Increase quantity">+</button>
+									</div>
+								</div>
+								{% if product.size_variant.count %}
+									<div class="form-group col">
+										<label>Select size</label>
+										<div class="mt-1">
+											{% for size in product.size_variant.all %}
+												<label class="custom-control custom-radio custom-control-inline">
+													<input type="radio" name="size_variant" value="{{ size.uid }}" data-size-price="{{ size.price }}" {% if selected_size == size.uid|stringformat:'s' %}checked{% endif %} required class="custom-control-input">
+													<span class="custom-control-label">{{ size.size_name }}</span>
+												</label>
+											{% endfor %}
+										</div>
+									</div>
+								{% endif %}
+							</div>
+							<button type="submit" class="btn btn-primary btn-lg">
+								Add to cart <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+							</button>
+						</form>
+					</article>
+				</main>
+			</div>
+		</div>
+	</div>
+</section>
+
+<script>
+	(function () {
+		const thumbnails = Array.from(document.querySelectorAll(".product-thumbnail"));
+		const mainImage = document.getElementById("main-product-image");
+		const viewer = document.getElementById("image-viewer");
+		const expandedImage = document.getElementById("expanded-product-image");
+		let activeImage = 0;
+
+		function showImage(index) {
+			if (!thumbnails.length || !mainImage) return;
+			activeImage = (index + thumbnails.length) % thumbnails.length;
+			const selected = thumbnails[activeImage];
+			mainImage.src = selected.dataset.imageUrl;
+			mainImage.alt = selected.dataset.imageAlt;
+			if (expandedImage) {
+				expandedImage.src = selected.dataset.imageUrl;
+				expandedImage.alt = selected.dataset.imageAlt;
+			}
+			thumbnails.forEach(function (thumbnail, thumbnailIndex) {
+				const isActive = thumbnailIndex === activeImage;
+				thumbnail.classList.toggle("is-active", isActive);
+				thumbnail.setAttribute("aria-pressed", String(isActive));
+			});
+		}
+
+		thumbnails.forEach(function (thumbnail, index) {
+			thumbnail.addEventListener("click", function () { showImage(index); });
+		});
+
+		const previousButton = document.getElementById("gallery-previous");
+		const nextButton = document.getElementById("gallery-next");
+		if (previousButton) previousButton.addEventListener("click", function () { showImage(activeImage - 1); });
+		if (nextButton) nextButton.addEventListener("click", function () { showImage(activeImage + 1); });
+
+		const openButton = document.getElementById("open-image-viewer");
+		const closeButton = document.getElementById("close-image-viewer");
+		if (openButton && viewer && typeof viewer.showModal === "function") {
+			openButton.addEventListener("click", function () { viewer.showModal(); });
+			closeButton.addEventListener("click", function () { viewer.close(); });
+			viewer.addEventListener("click", function (event) {
+				if (event.target === viewer) viewer.close();
+			});
+		}
+
+		document.querySelectorAll("[data-quantity-step]").forEach(function (button) {
+			button.addEventListener("click", function () {
+				const input = document.getElementById("product-quantity");
+				const minimum = Number(input.min) || 1;
+				const nextValue = (Number(input.value) || minimum) + Number(button.dataset.quantityStep);
+				input.value = String(Math.max(minimum, nextValue));
+			});
+		});
+
+		const price = document.getElementById("product-price");
+		document.querySelectorAll('input[name="size_variant"]').forEach(function (sizeInput) {
+			sizeInput.addEventListener("change", function () {
+				if (price) {
+					price.textContent = "$" + (
+						Number(price.dataset.basePrice) + Number(sizeInput.dataset.sizePrice)
+					);
+				}
+				const url = new URL(window.location.href);
+				url.searchParams.set("size", sizeInput.value);
+				window.history.replaceState({}, "", url);
+			});
+		});
+	})();
+</script>
+{% endblock %}

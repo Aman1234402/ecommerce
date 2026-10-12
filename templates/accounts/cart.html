@@ -1,0 +1,58 @@
+{% extends "base/base.html" %}
+
+{% block start %}
+<section class="section-content padding-y">
+	<div class="container">
+		<h2 class="mb-4">Your shopping cart</h2>
+
+		{% if cart_items %}
+			<div class="card">
+				{% for item in cart_items %}
+					<div class="row no-gutters align-items-center border-bottom p-3">
+						<div class="col-md-2">
+							{% with image=item.product.product_images.first %}
+								{% if image %}
+									<img src="{{ image.image.url }}" class="img-fluid" alt="{{ item.product.product_name }}">
+								{% endif %}
+							{% endwith %}
+						</div>
+						<div class="col-md-4 px-md-3">
+							<a href="{% url 'get_product' item.product.slug %}"><strong>{{ item.product.product_name }}</strong></a>
+							{% if item.size_variant %}
+								<div class="text-muted">Size: {{ item.size_variant.size_name }}</div>
+							{% endif %}
+							<div>${{ item.unit_price }} each</div>
+						</div>
+						<div class="col-md-3">
+							<form method="post" action="{% url 'update_cart_item' item.uid %}" class="form-inline">
+								{% csrf_token %}
+								<label class="sr-only" for="quantity-{{ item.uid }}">Quantity</label>
+								<input id="quantity-{{ item.uid }}" type="number" name="quantity" value="{{ item.quantity }}" min="1" required class="form-control mr-2" style="width: 90px;">
+								<button type="submit" class="btn btn-outline-primary btn-sm">Update</button>
+							</form>
+						</div>
+						<div class="col-md-2 text-md-right">
+							<strong>${{ item.line_total }}</strong>
+						</div>
+						<div class="col-md-1 text-md-right">
+							<form method="post" action="{% url 'remove_cart_item' item.uid %}">
+								{% csrf_token %}
+								<button type="submit" class="btn btn-link text-danger" aria-label="Remove {{ item.product.product_name }}">Remove</button>
+							</form>
+						</div>
+					</div>
+				{% endfor %}
+				<div class="p-3 text-right">
+					<h4>Subtotal: ${{ cart_total }}</h4>
+				</div>
+			</div>
+			<a href="{% url 'index' %}" class="btn btn-outline-primary mt-3">Continue shopping</a>
+		{% else %}
+			<div class="card card-body text-center">
+				<p>Your cart is empty.</p>
+				<div><a href="{% url 'index' %}" class="btn btn-primary">Browse products</a></div>
+			</div>
+		{% endif %}
+	</div>
+</section>
+{% endblock %}

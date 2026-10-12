@@ -1,0 +1,83 @@
+{% extends "base/base.html" %}
+
+{% block start %}
+<section class="container py-5">
+	<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+		<div>
+			<h1 class="h2 mb-1">Find your next favorite</h1>
+			<p class="text-muted mb-0">Search, explore, and save the products you love.</p>
+		</div>
+		<a href="{% url 'index' %}" class="btn btn-outline-secondary mt-3 mt-md-0">Clear filters</a>
+	</div>
+
+	<div class="catalog-controls card card-body mb-4">
+		<div class="d-flex flex-wrap justify-content-between align-items-center">
+			<div class="catalog-categories mb-3 mb-md-0" role="group" aria-label="Filter products by category">
+				<button type="button" class="btn btn-sm {% if not selected_category %}btn-primary is-active{% else %}btn-outline-secondary{% endif %} catalog-category" data-category-filter="" aria-pressed="{% if not selected_category %}true{% else %}false{% endif %}">All products</button>
+				{% for category in categories %}
+					<button type="button" class="btn btn-sm {% if selected_category == category.slug %}btn-primary is-active{% else %}btn-outline-secondary{% endif %} catalog-category" data-category-filter="{{ category.slug }}" aria-pressed="{% if selected_category == category.slug %}true{% else %}false{% endif %}">{{ category.category_name }}</button>
+				{% endfor %}
+			</div>
+			<div class="d-flex flex-wrap align-items-center">
+				<button type="button" class="btn btn-sm btn-outline-danger mr-3 mb-2 mb-sm-0" id="favorites-filter" aria-pressed="false">
+					<i class="far fa-heart" aria-hidden="true"></i> Favorites <span id="favorites-count">0</span>
+				</button>
+				<label for="catalog-sort" class="mr-2 mb-0">Sort by</label>
+				<select class="form-control form-control-sm" id="catalog-sort">
+					<option value="featured">Featured</option>
+					<option value="name-asc">Name: A to Z</option>
+					<option value="price-asc">Price: low to high</option>
+					<option value="price-desc">Price: high to low</option>
+				</select>
+			</div>
+		</div>
+		<div class="d-flex justify-content-between align-items-center mt-3">
+			<p class="text-muted mb-0" id="catalog-result-count" aria-live="polite">{{ products|length }} products</p>
+			<button type="button" class="btn btn-link btn-sm p-0" id="clear-catalog-search">Clear search</button>
+		</div>
+	</div>
+
+	<div class="row" id="product-grid">
+		{% for product in products %}
+			<div class="col-6 col-md-4 col-lg-3 mb-4 catalog-product"
+				data-product-name="{{ product.product_name|lower }}"
+				data-product-description="{{ product.product_description|lower }}"
+				data-product-category="{{ product.category.slug }}"
+				data-product-price="{{ product.price }}"
+				data-product-id="{{ product.uid }}">
+				<article class="card h-100 product-card">
+					<div class="product-card-media">
+						<a href="{% url 'get_product' product.slug %}" class="product-card-image">
+						{% with image=product.product_images.first %}
+							{% if image %}
+								<img src="{{ image.image.url }}" alt="{{ product.product_name }}" loading="lazy">
+							{% else %}
+								<div class="product-image-placeholder" role="img" aria-label="No image available">
+									<i class="fas fa-image" aria-hidden="true"></i>
+									<span>Image coming soon</span>
+								</div>
+							{% endif %}
+						{% endwith %}
+						</a>
+						<button type="button" class="product-favorite" data-favorite-id="{{ product.uid }}" aria-label="Save {{ product.product_name }} to favorites" aria-pressed="false">
+							<i class="far fa-heart" aria-hidden="true"></i>
+						</button>
+					</div>
+					<div class="card-body d-flex flex-column">
+						<small class="text-muted">{{ product.category.category_name }}</small>
+						<a href="{% url 'get_product' product.slug %}" class="h6 mt-1 product-name">{{ product.product_name }}</a>
+						<div class="font-weight-bold mt-auto">${{ product.price }}</div>
+						<a href="{% url 'get_product' product.slug %}" class="btn btn-outline-primary btn-sm mt-3">View product</a>
+					</div>
+				</article>
+			</div>
+		{% empty %}
+		{% endfor %}
+	</div>
+	<div class="card card-body text-center" id="catalog-empty-state" {% if products %}hidden{% endif %}>
+		<h2 class="h5">No products found</h2>
+		<p class="text-muted mb-3">Try another search or category, or clear your filters.</p>
+		<div><a href="{% url 'index' %}" class="btn btn-primary">Show all products</a></div>
+	</div>
+</section>
+{% endblock %}

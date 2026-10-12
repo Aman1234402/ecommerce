@@ -1,0 +1,30 @@
+# Local environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+env/
+venv/
+.venv/
+
+# Local Django settings and collected static files
+local_settings.py
+/staticfiles/
+
+# Local development database
+db.sqlite3
+db.sqlite3-journal
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs and operating-system files
+*.log
+.DS_Store
+Thumbs.db
