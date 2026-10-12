@@ -1,4 +1,4 @@
-# Ecommerce
+# ecommerce
 
 A Django e-commerce project featuring a product catalog, interactive product pages, email-verified accounts, and a persistent shopping cart.
 
